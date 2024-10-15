@@ -1,0 +1,72 @@
+// Prevent console window in addition to Slint window in Windows release builds when, e.g., starting the app via file manager. Ignored on other platforms.
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
+use slint::ComponentHandle;
+use std::sync::{Arc, Mutex};
+
+slint::include_modules!();
+
+// Define the User struct
+#[derive(Debug, Clone)]
+struct User {
+    email: String,
+    password: String,
+    property_owner: bool,
+}
+
+fn main() {
+    // Initialize the app
+    let app = App::new().expect("Failed to create app");
+
+    // State management for the user (using an Option to handle empty states initially)
+    let user_state = Arc::new(Mutex::new(None::<User>));
+
+    // Handle the 'create_account' callback
+    let user_state_clone = Arc::clone(&user_state);
+    app.on_create_account(move || {
+        let mut user_email = String::new();
+        let mut user_password = String::new();
+        let mut user_property_owner = false;
+
+        // Capture email and password via their respective callbacks
+        app.on_email(move |email| {
+            user_email = email.to_string();
+        });
+        app.on_password(move |password| {
+            user_password = password.to_string();
+        });
+        app.on_property_owner(move |property_owner| {
+            user_property_owner = property_owner;
+        });
+
+        // Check if the email and password are not empty
+        if !user_email.is_empty() && !user_password.is_empty() {
+            // Create a new User object
+            let new_user = User {
+                email: user_email.clone(),
+                password: user_password.clone(),
+                property_owner: user_property_owner,
+            };
+
+            // Store the new user in the user_state
+            *user_state_clone.lock().unwrap() = Some(new_user);
+
+            // Print user details (optional for debugging)
+            println!(
+                "User account created: email = {}, property owner = {}",
+                user_email, user_property_owner
+            );
+
+            // Switch to the main state (state 2)
+            app.on_select_current_state(move |state| {
+                app.set_current_state(2);
+            });
+        } else {
+            // Handle the case where input fields are empty (optional error handling)
+            println!("Error: Email and password must not be empty.");
+        }
+    });
+
+    // Run the app
+    app.run().unwrap();
+}

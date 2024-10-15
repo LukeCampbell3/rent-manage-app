@@ -1,17 +1,136 @@
-import { Button, VerticalBox } from "std-widgets.slint";
+import { CheckBox, Button, LineEdit } from "std-widgets.slint";
 
-export component AppWindow inherits Window {
-    in-out property <int> counter: 42;
-    callback request-increase-value();
-    VerticalBox {
-        Text {
-            text: "Counter: \{root.counter}";
+export component App inherits Window {
+    width: 400px;
+    height: 600px;
+    title: "Property Manager";
+
+    // State variable (0: Create Account, 1: Sign In, 2: Main)
+    in-out property <int> current_state: 0;
+
+    // Define properties
+    in-out property <string> user_email;
+    in-out property <string> user_password;
+    in-out property <bool> is_property_owner;
+    in-out property <string> signin_email;
+    in-out property <string> signin_password;
+    in-out property <string> property_location;
+    in-out property <[string]> properties: [];
+
+    // Define callbacks (for interaction with Rust)
+    callback create_account();
+    callback sign_in();
+    callback add_property(string);
+
+    VerticalLayout {
+        spacing: 10px;
+        padding: 10px;
+
+        // Create Account State
+        VerticalLayout {
+            visible: root.current_state == 0;
+            spacing: 10px;
+
+            Text {
+                text: "Create an Account";
+                font-size: 24px;
+                horizontal-alignment: center;
+            }
+
+            LineEdit {
+                font-size: 12px;
+                text <=> root.user_email;
+                placeholder-text: "Enter your email";
+            }
+
+            LineEdit {
+                text <=> root.user_password;
+                placeholder-text: "Enter your password";
+            }
+
+            HorizontalLayout {
+                spacing: 5px;
+
+                Text { 
+                    text: "Property Owner";
+                }
+                CheckBox {
+                    checked <=> root.is_property_owner;
+                }
+            }
+
+            Button {
+                text: "Create Account";
+                clicked => { root.create_account(); }
+            }
         }
 
-        Button {
-            text: "Increase value";
-            clicked => {
-                root.request-increase-value();
+        // Sign In State
+        VerticalLayout {
+            visible: root.current_state == 1;
+            spacing: 10px;
+
+            Text {
+                text: "Sign In";
+                font-size: 24px;
+                horizontal-alignment: center;
+            }
+
+            LineEdit {
+                text <=> root.signin_email;
+                placeholder-text: "Enter your email";
+            }
+
+            LineEdit {
+                text <=> root.signin_password;
+                placeholder-text: "Enter your password";
+            }
+
+            Button {
+                text: "Sign In";
+                clicked => { root.sign_in(); }
+            }
+        }
+
+        // Main State (for Property Owners)
+        VerticalLayout {
+            visible: root.current_state == 2;
+            spacing: 10px;
+            alignment: center;
+
+            Text {
+                text: "Welcome to the Main Page";
+                font-size: 24px;
+                horizontal-alignment: center;
+            }
+
+            HorizontalLayout {
+                spacing: 10px;
+                
+
+                Text { 
+                    text: "Add Property";
+                    font-size: 12px;
+                }
+
+                LineEdit {
+                    text <=> root.property_location;
+                    placeholder-text: "Enter address";
+                }
+
+                Button {
+                    text: "Add Property";
+                    clicked => { root.add_property(root.property_location); }
+                }
+            }
+
+            // Displaying the property locations
+            VerticalLayout {
+                spacing: 5px;
+
+                for property in root.properties: Text {
+                    text: property;
+                }
             }
         }
     }
